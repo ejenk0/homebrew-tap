@@ -1,3 +1,8 @@
+# typed: false
+# frozen_string_literal: true
+
+require_relative "../require/macfuse"
+
 class Bbfs < Formula
   desc "Filesystem driver that mounts Blackboard course contents as local files"
   homepage "https://github.com/BlackboardFS/bbfs"
@@ -7,7 +12,7 @@ class Bbfs < Formula
   depends_on "rust" => :build
 
   on_macos do
-    depends_on cask: "macfuse"
+    depends_on MacfuseRequirement
   end
 
   on_linux do
@@ -17,6 +22,7 @@ class Bbfs < Formula
   end
 
   def install
+    setup_fuse if OS.mac?
     system "cargo", "install",
       "--locked",
       "--root", prefix,
