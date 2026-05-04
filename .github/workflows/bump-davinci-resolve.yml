@@ -1,0 +1,102 @@
+name: Bump davinci-resolve
+
+on:
+  schedule:
+    - cron: "0 18 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: bump-davinci-resolve
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Link workspace as a tap
+        run: |
+          taps_root="$(brew --repository)/Library/Taps/ejenk0"
+          mkdir -p "$taps_root"
+          ln -sf "$GITHUB_WORKSPACE" "$taps_root/homebrew-tap"
+
+      - name: Fetch latest version metadata
+        id: latest
+        run: |
+          json=$(curl -fsSL https://www.blackmagicdesign.com/api/support/latest-stable-version/davinci-resolve/mac)
+          ver=$(jq -r '"\(.mac.major).\(.mac.minor).\(.mac.releaseNum)"' <<<"$json")
+          dlid=$(jq -r '.mac.downloadId' <<<"$json")
+          {
+            echo "version=$ver"
+            echo "downloadid=$dlid"
+            echo "csv=$ver,$dlid"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Compare with current cask
+        id: cmp
+        run: |
+          cur=$(grep -m1 '^  version' Casks/davinci-resolve.rb | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "current=$cur" >> "$GITHUB_OUTPUT"
+          if [ "$cur" = "${{ steps.latest.outputs.csv }}" ]; then
+            echo "Already at latest: $cur"
+            echo "needs_bump=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Bump needed: $cur -> ${{ steps.latest.outputs.csv }}"
+            echo "needs_bump=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve signed download URL and hash the release
+        if: steps.cmp.outputs.needs_bump == 'true'
+        id: shasum
+        run: |
+          set -euo pipefail
+          signed=$(curl -fsSL --request POST \
+            --header 'Content-Type: application/json;charset=UTF-8' \
+            --header 'Origin: https://www.blackmagicdesign.com' \
+            --header 'Referer: https://www.blackmagicdesign.com/support/download/77ef91f67a9e411bbbe299e595b4cfcc/Mac%20OS%20X' \
+            --header 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' \
+            --data '{"firstname":"Homebrew","lastname":"Cask","email":"brew@example.com","phone":"202-555-0194","country":"us","state":"California","city":"San Francisco","street":"1 Infinite Loop","product":"DaVinci Resolve"}' \
+            "https://www.blackmagicdesign.com/api/register/us/download/${{ steps.latest.outputs.downloadid }}")
+          if [[ -z "$signed" || "$signed" != http* ]]; then
+            echo "Did not receive a signed URL. Response was: $signed" >&2
+            exit 1
+          fi
+          curl -fsSL --retry 3 -o release.zip "$signed"
+          sha=$(shasum -a 256 release.zip | awk '{print $1}')
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+          rm -f release.zip
+
+      - name: Update cask file
+        if: steps.cmp.outputs.needs_bump == 'true'
+        run: |
+          sed -i.bak -E 's|^  version "[^"]+"|  version "${{ steps.latest.outputs.csv }}"|' Casks/davinci-resolve.rb
+          sed -i.bak -E 's|^  sha256 "[^"]+"|  sha256 "${{ steps.shasum.outputs.sha256 }}"|' Casks/davinci-resolve.rb
+          rm -f Casks/davinci-resolve.rb.bak
+          git --no-pager diff Casks/davinci-resolve.rb
+
+      - name: Validate
+        if: steps.cmp.outputs.needs_bump == 'true'
+        run: |
+          # Cask/Url is excluded: cop assumes a string URL and infinite-loops
+          # on autocorrect when the URL is a method call. brew audit is also
+          # skipped — multiple audit checks call T.must on URL parsing that
+          # returns nil for our downloadId, crashing on this cask shape.
+          # We've already verified the download works by fetching it above.
+          brew style --except-cops=Cask/Url \
+            Casks/davinci-resolve.rb \
+            lib/blackmagic_download_strategy.rb
+
+      - name: Commit and push
+        if: steps.cmp.outputs.needs_bump == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Casks/davinci-resolve.rb
+          git commit -m "davinci-resolve ${{ steps.cmp.outputs.current }} -> ${{ steps.latest.outputs.csv }}"
+          git push origin HEAD:main
