@@ -23,7 +23,7 @@ cask "davinci-resolve" do
     end
   end
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
   # Download is a zip containing DaVinci_Resolve_<version>_Mac.dmg
   container type: :zip
 
