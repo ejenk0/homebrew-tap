@@ -94,9 +94,14 @@ jobs:
 
       - name: Commit and push
         if: steps.cmp.outputs.needs_bump == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add Casks/davinci-resolve.rb
           git commit -m "davinci-resolve ${{ steps.cmp.outputs.current }} -> ${{ steps.latest.outputs.csv }}"
-          git push origin HEAD:main
+          # Authenticate the push explicitly: setup-homebrew's tap symlink means
+          # checkout's persisted credentials aren't applied to this remote, so
+          # git would otherwise prompt for a username and fail.
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:main
