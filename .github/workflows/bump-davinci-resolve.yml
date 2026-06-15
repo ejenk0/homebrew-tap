@@ -87,11 +87,8 @@ jobs:
           # on autocorrect when the URL is a method call. brew audit is also
           # skipped — multiple audit checks call T.must on URL parsing that
           # returns nil for our downloadId, crashing on this cask shape.
-          # Sorbet/StrictSigil is excluded: it demands `# typed: strict`, which
-          # requires full method signatures on the download strategy — overkill
-          # for a small custom strategy that already carries `# typed: true`.
           # We've already verified the download works by fetching it above.
-          brew style --except-cops=Cask/Url,Sorbet/StrictSigil \
+          brew style --except-cops=Cask/Url \
             Casks/davinci-resolve.rb \
             lib/blackmagic_download_strategy.rb
 
