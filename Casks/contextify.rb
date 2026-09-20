@@ -1,6 +1,6 @@
 cask "contextify" do
-  version "1.8.0"
-  sha256 "c7fd37f002a4f9a95ea2b6685febda64340ed0bc60ebc211bc1b5bc0d3255a4c"
+  version "1.8.1"
+  sha256 "6886550b8a5ce05ce537ed9619fe7d3ca2bc50c2a2102205612ba60a4617df13"
 
   url "https://github.com/PeterPym/contextify/releases/download/v#{version}/Contextify.dmg"
   name "Contextify"
