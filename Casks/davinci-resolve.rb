@@ -5,8 +5,8 @@ cask "davinci-resolve" do
   # downloadId comes from:
   #   curl -s https://www.blackmagicdesign.com/api/support/latest-stable-version/davinci-resolve/mac
   # When bumping, update both values together (same as updating version + sha256).
-  version "21.1.2,cef11ad119494da5a908b9a05b332cc7"
-  sha256 "ddfd42ad960c32254752b5e68bc9e3021820ca2200a53a99c38848e110aa32f0"
+  version "21.2.0,0c2e03fcd586438bae0d268fbc3ad477"
+  sha256 "9511b293abd4996f5b4101c96fbd652bf75fc470df76a54f62fca1dc9ab0d969"
 
   # The URL is the downloadId. BlackmagicDownloadStrategy POSTs to obtain a
   # short-lived signed CDN URL and downloads from it.
