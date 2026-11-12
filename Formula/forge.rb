@@ -4,8 +4,8 @@
 class Forge < Formula
   desc "Open-source rules engine for the Magic: The Gathering card game"
   homepage "https://github.com/Card-Forge/forge"
-  url "https://github.com/Card-Forge/forge/releases/download/forge-2.0.15/forge-installer-2.0.15.tar.bz2"
-  sha256 "4468f182b60f6ca62d89697baa208981085af744f116781af751c611826db600"
+  url "https://github.com/Card-Forge/forge/releases/download/forge-2.0.16/forge-installer-2.0.16.tar.bz2"
+  sha256 "feb1338c2f4a8c62e9289b6270caa7fcc38f2441d5ec4d7cff237c2c1a3b15d0"
   license "GPL-3.0-or-later"
 
   livecheck do
